@@ -11,6 +11,7 @@ import numpy as np
 
 from ..pakbase import Package
 from ..utils.recarray_utils import create_empty_recarray
+from ..utils import read1d
 
 
 class ModflowFhb(Package):
@@ -160,40 +161,23 @@ class ModflowFhb(Package):
             unitnumber = ModflowFhb._defaultunit()
 
         # set filenames
-        if filenames is None:
-            filenames = [None, None]
-        elif isinstance(filenames, str):
-            filenames = [filenames, None]
-        elif isinstance(filenames, list):
-            if len(filenames) < 2:
-                filenames.append(None)
+        filenames = self._prepare_filenames(filenames, 2)
 
         # update external file information with cbc output, if necessary
         if ipakcb is not None:
-            fname = filenames[1]
             model.add_output_file(
-                ipakcb, fname=fname, package=ModflowFhb._ftype()
+                ipakcb, fname=filenames[1], package=self._ftype()
             )
         else:
             ipakcb = 0
 
-        # Fill namefile items
-        name = [ModflowFhb._ftype()]
-        units = [unitnumber]
-        extra = [""]
-
-        # set package name
-        fname = [filenames[0]]
-
-        # Call ancestor's init to set self.parent, extension, name and unit number
-        Package.__init__(
-            self,
+        # call base package constructor
+        super().__init__(
             model,
             extension=extension,
-            name=name,
-            unit_number=units,
-            extra=extra,
-            filenames=fname,
+            name=self._ftype(),
+            unit_number=unitnumber,
+            filenames=filenames[0],
         )
 
         self._generate_heading()
@@ -492,7 +476,7 @@ class ModflowFhb(Package):
         if nfhbx1 > 0:
             if model.verbose:
                 print("loading fhb dataset 2")
-            print("dataset 2 will not be preserved in the created hfb object.")
+            print("dataset 2 will not be preserved in the created fhb object.")
             for idx in range(nfhbx1):
                 line = f.readline()
                 raw = line.strip().split()
@@ -507,7 +491,7 @@ class ModflowFhb(Package):
         if nfhbx2 > 0:
             if model.verbose:
                 print("loading fhb dataset 3")
-            print("dataset 3 will not be preserved in the created hfb object.")
+            print("dataset 3 will not be preserved in the created fhb object.")
             for idx in range(nfhbx2):
                 line = f.readline()
                 raw = line.strip().split()
@@ -534,16 +518,12 @@ class ModflowFhb(Package):
         # Dataset 4b
         if model.verbose:
             print("loading fhb dataset 4b")
-        line = f.readline()
-        raw = line.strip().split()
-        bdtime = []
-        for n in range(nbdtim):
-            bdtime.append(float(raw[n]))
+
+        bdtime = read1d(f, np.zeros((nbdtim,)))
 
         # Dataset 5 and 6
         cnstm5 = None
         ds5 = None
-        cnstm6 = None
         ds6 = None
         if nflw > 0:
             if model.verbose:
@@ -562,9 +542,7 @@ class ModflowFhb(Package):
 
             if model.verbose:
                 print("loading fhb dataset 5b")
-            dtype = ModflowFhb.get_default_dtype(
-                nbdtim=nbdtim, head=False, structured=model.structured
-            )
+
             ds5 = ModflowFhb.get_empty(
                 ncells=nflw,
                 nbdtim=nbdtim,
@@ -572,9 +550,8 @@ class ModflowFhb(Package):
                 structured=model.structured,
             )
             for n in range(nflw):
-                line = f.readline()
-                raw = line.strip().split()
-                ds5[n] = tuple(raw[: len(dtype.names)])
+                tds5 = read1d(f, np.zeros((nbdtim + 4)))
+                ds5[n] = tuple(tds5)
 
             if model.structured:
                 ds5["k"] -= 1
@@ -589,13 +566,13 @@ class ModflowFhb(Package):
                 ds6 = []
                 dtype = []
                 for name, weight in flow_aux:
-                    dtype.append((name, np.float32))
+                    dtype.append((name, object))
                 for naux in range(nfhbx1):
                     if model.verbose:
                         print(f"loading fhb dataset 6a - aux {naux + 1}")
                     print(
                         "dataset 6a will not be preserved in "
-                        "the created hfb object."
+                        "the created fhb object."
                     )
                     # Dataset 6a IFHBUN CNSTM IFHBPT
                     line = f.readline()
@@ -614,20 +591,17 @@ class ModflowFhb(Package):
                         print(f"loading fhb dataset 6b - aux {naux + 1}")
                     print(
                         "dataset 6b will not be preserved in "
-                        "the created hfb object."
+                        "the created fhb object."
                     )
                     current = np.recarray(nflw, dtype=dtype)
                     for n in range(nflw):
-                        line = f.readline()
-                        raw = line.strip().split()
-                        current[n] = tuple(raw[: len(dtype.names)])
+                        ds6b = read1d(f, np.zeros((nbdtim,)))
+                        current[n] = (tuple(ds6b),)
                     ds6.append(current.copy())
 
         # Dataset 7
         cnstm7 = None
         ds7 = None
-        cnstm8 = None
-        ds8 = None
         if nhed > 0:
             if model.verbose:
                 print("loading fhb dataset 7a")
@@ -645,9 +619,7 @@ class ModflowFhb(Package):
 
             if model.verbose:
                 print("loading fhb dataset 7b")
-            dtype = ModflowFhb.get_default_dtype(
-                nbdtim=nbdtim, head=True, structured=model.structured
-            )
+
             ds7 = ModflowFhb.get_empty(
                 ncells=nhed,
                 nbdtim=nbdtim,
@@ -655,9 +627,8 @@ class ModflowFhb(Package):
                 structured=model.structured,
             )
             for n in range(nhed):
-                line = f.readline()
-                raw = line.strip().split()
-                ds7[n] = tuple(raw[: len(dtype.names)])
+                tds7 = read1d(f, np.empty((nbdtim + 4)))
+                ds7[n] = tuple(tds7)
 
             if model.structured:
                 ds7["k"] -= 1
@@ -672,13 +643,13 @@ class ModflowFhb(Package):
                 ds8 = []
                 dtype = []
                 for name, weight in head_aux:
-                    dtype.append((name, np.float32))
+                    dtype.append((name, object))
                 for naux in range(nfhbx1):
                     if model.verbose:
                         print(f"loading fhb dataset 8a - aux {naux + 1}")
                     print(
                         "dataset 8a will not be preserved in "
-                        "the created hfb object."
+                        "the created fhb object."
                     )
                     # Dataset 6a IFHBUN CNSTM IFHBPT
                     line = f.readline()
@@ -698,13 +669,12 @@ class ModflowFhb(Package):
                         print(f"loading fhb dataset 8b - aux {naux + 1}")
                     print(
                         "dataset 8b will not be preserved in "
-                        "the created hfb object."
+                        "the created fhb object."
                     )
                     current = np.recarray(nflw, dtype=dtype)
                     for n in range(nhed):
-                        line = f.readline()
-                        raw = line.strip().split()
-                        current[n] = tuple(raw[: len(dtype.names)])
+                        ds8b = read1d(f, np.zeros((nbdtim,)))
+                        current[n] = (tuple(ds8b),)
                     ds8.append(current.copy())
 
         if openfile:

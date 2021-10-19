@@ -80,6 +80,9 @@ class ModflowWel(Package):
         number greater than zero. To define the names for all package files
         (input and output) the length of the list of strings should be 2.
         Default is None.
+    add_package : bool
+        Flag to add the initialised package object to the parent model object.
+        Default is True.
 
     Attributes
     ----------
@@ -148,51 +151,30 @@ class ModflowWel(Package):
         binary=False,
         unitnumber=None,
         filenames=None,
+        add_package=True,
     ):
-        """
-        Package constructor.
-
-        """
         # set default unit number of one is not specified
         if unitnumber is None:
             unitnumber = ModflowWel._defaultunit()
 
         # set filenames
-        if filenames is None:
-            filenames = [None, None]
-        elif isinstance(filenames, str):
-            filenames = [filenames, None]
-        elif isinstance(filenames, list):
-            if len(filenames) < 2:
-                filenames.append(None)
+        filenames = self._prepare_filenames(filenames, 2)
 
         # update external file information with cbc output, if necessary
         if ipakcb is not None:
-            fname = filenames[1]
             model.add_output_file(
-                ipakcb, fname=fname, package=ModflowWel._ftype()
+                ipakcb, fname=filenames[1], package=self._ftype()
             )
         else:
             ipakcb = 0
 
-        # Fill namefile items
-        name = [ModflowWel._ftype()]
-        units = [unitnumber]
-        extra = [""]
-
-        # set package name
-        fname = [filenames[0]]
-
-        # Call ancestor's init to set self.parent, extension, name and
-        # unit number
-        Package.__init__(
-            self,
+        # call base package constructor
+        super().__init__(
             model,
             extension=extension,
-            name=name,
-            unit_number=units,
-            extra=extra,
-            filenames=fname,
+            name=self._ftype(),
+            unit_number=unitnumber,
+            filenames=filenames[0],
         )
 
         self._generate_heading()
@@ -258,7 +240,8 @@ class ModflowWel(Package):
             self, stress_period_data, binary=binary
         )
 
-        self.parent.add_package(self)
+        if add_package:
+            self.parent.add_package(self)
 
     def _ncells(self):
         """Maximum number of cells that have wells (developed for

@@ -225,7 +225,11 @@ def test_triangle_unstructured_grid():
     xc, yc = tri.get_xcyc().T
     ncpl = np.array([len(iverts)])
     g = UnstructuredGrid(
-        vertices=verts, iverts=iverts, ncpl=ncpl, xcenters=xc, ycenters=yc,
+        vertices=verts,
+        iverts=iverts,
+        ncpl=ncpl,
+        xcenters=xc,
+        ycenters=yc,
     )
     assert len(g.grid_lines) == 8190
     assert g.nnodes == g.ncpl == 2730
@@ -291,9 +295,10 @@ def test_voronoi_grid0(plot=False):
 
     vor = VoronoiGrid(tri)
     gridprops = vor.get_gridprops_vertexgrid()
+    ncpl = gridprops["ncpl"]
     assert (
-        gridprops["ncpl"] == answer_ncpl
-    ), "Number of cells should be {answer_ncpl}"
+        ncpl == answer_ncpl
+    ), f"Number of cells should be {answer_ncpl}. Found {ncpl}"
 
     voronoi_grid = VertexGrid(**gridprops, nlay=1)
 
@@ -326,9 +331,10 @@ def test_voronoi_grid1(plot=False):
     vor = VoronoiGrid(tri)
     gridprops = vor.get_gridprops_vertexgrid()
     voronoi_grid = VertexGrid(**gridprops, nlay=1)
+    ncpl = gridprops["ncpl"]
     assert (
-        gridprops["ncpl"] == answer_ncpl
-    ), "Number of cells should be {answer_ncpl}"
+        ncpl == answer_ncpl
+    ), f"Number of cells should be {answer_ncpl}. Found {ncpl}"
 
     if plot:
         import matplotlib.pyplot as plt
@@ -345,22 +351,23 @@ def test_voronoi_grid1(plot=False):
 def test_voronoi_grid2(plot=False):
 
     name = "vor2"
-    answer_ncpl = 5058
+    answer_ncpl = 538
     theta = np.arange(0.0, 2 * np.pi, 0.2)
     radius = 100.0
     x = radius * np.cos(theta)
     y = radius * np.sin(theta)
     circle_poly = [(x, y) for x, y in zip(x, y)]
-    tri = Triangle(maximum_area=5, angle=30, model_ws=tpth)
+    tri = Triangle(maximum_area=50, angle=30, model_ws=tpth)
     tri.add_polygon(circle_poly)
     tri.build(verbose=False)
 
     vor = VoronoiGrid(tri)
     gridprops = vor.get_gridprops_vertexgrid()
     voronoi_grid = VertexGrid(**gridprops, nlay=1)
+    ncpl = gridprops["ncpl"]
     assert (
-        gridprops["ncpl"] == answer_ncpl
-    ), "Number of cells should be {answer_ncpl}"
+        ncpl == answer_ncpl
+    ), f"Number of cells should be {answer_ncpl}. Found {ncpl}"
 
     if plot:
         import matplotlib.pyplot as plt
@@ -377,7 +384,7 @@ def test_voronoi_grid2(plot=False):
 def test_voronoi_grid3(plot=False):
 
     name = "vor3"
-    answer_ncpl = 2375
+    answer_ncpl = 300
 
     theta = np.arange(0.0, 2 * np.pi, 0.2)
     radius = 100.0
@@ -391,7 +398,7 @@ def test_voronoi_grid3(plot=False):
     y = radius * np.sin(theta) + 25.0
     inner_circle_poly = [(x, y) for x, y in zip(x, y)]
 
-    tri = Triangle(maximum_area=10, angle=30, model_ws=tpth)
+    tri = Triangle(maximum_area=100, angle=30, model_ws=tpth)
     tri.add_polygon(circle_poly)
     tri.add_polygon(inner_circle_poly)
     tri.add_hole((25, 25))
@@ -400,9 +407,10 @@ def test_voronoi_grid3(plot=False):
     vor = VoronoiGrid(tri)
     gridprops = vor.get_gridprops_vertexgrid()
     voronoi_grid = VertexGrid(**gridprops, nlay=1)
+    ncpl = gridprops["ncpl"]
     assert (
-        gridprops["ncpl"] == answer_ncpl
-    ), "Number of cells should be {answer_ncpl}"
+        ncpl == answer_ncpl
+    ), f"Number of cells should be {answer_ncpl}. Found {ncpl}"
 
     if plot:
         import matplotlib.pyplot as plt
@@ -435,9 +443,10 @@ def test_voronoi_grid4(plot=False):
     vor = VoronoiGrid(tri)
     gridprops = vor.get_gridprops_vertexgrid()
     voronoi_grid = VertexGrid(**gridprops, nlay=1)
+    ncpl = gridprops["ncpl"]
     assert (
-        gridprops["ncpl"] == answer_ncpl
-    ), "Number of cells should be {answer_ncpl}"
+        ncpl == answer_ncpl
+    ), f"Number of cells should be {answer_ncpl}. Found {ncpl}"
 
     if plot:
         import matplotlib.pyplot as plt
@@ -498,9 +507,10 @@ def test_voronoi_grid5(plot=False):
     vor = VoronoiGrid(tri)
     gridprops = vor.get_gridprops_vertexgrid()
     voronoi_grid = VertexGrid(**gridprops, nlay=1)
+    ncpl = gridprops["ncpl"]
     assert (
-        gridprops["ncpl"] == answer_ncpl
-    ), "Number of cells should be {answer_ncpl}"
+        ncpl == answer_ncpl
+    ), f"Number of cells should be {answer_ncpl}. Found {ncpl}"
 
     if plot:
         import matplotlib.pyplot as plt

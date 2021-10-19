@@ -29,12 +29,14 @@ setup(
     license="CC0",
     platforms="Windows, Mac OS-X, Linux",
     install_requires=[
-        "numpy >=1.15",
+        "numpy>=1.15.0",
+        "matplotlib>=1.4.0",
     ],
     packages=[
         "flopy",
         "flopy.modflow",
         "flopy.modflowlgr",
+        "flopy.mfusg",
         "flopy.modpath",
         "flopy.mt3d",
         "flopy.seawat",

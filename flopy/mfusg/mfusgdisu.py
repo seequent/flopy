@@ -1,9 +1,10 @@
 """
-mfdisu module.  Contains the ModflowDisU class. Note that the user can access
-the ModflowDisU class as `flopy.modflow.ModflowDisU`.
-
+mfdisu module.  Contains the MfUsgDisU class. Note that the user can access
+the MfUsgDisU class as `flopy.mfusg.MfUsgDisU`.
 """
 import numpy as np
+
+from .mfusg import MfUsg
 from ..pakbase import Package
 from ..utils import Util2d, Util3d, read1d
 from ..utils.reference import TemporalReference
@@ -13,14 +14,14 @@ ITMUNI = {"u": 0, "s": 1, "m": 2, "h": 3, "d": 4, "y": 5}
 LENUNI = {"u": 0, "f": 1, "m": 2, "c": 3}
 
 
-class ModflowDisU(Package):
+class MfUsgDisU(Package):
     """
     MODFLOW Unstructured Discretization Package Class.
 
     Parameters
     ----------
     model : model object
-        The model object (of type :class:`flopy.modflow.Modflow`) to which
+        The model object (of type :class:`flopy.mfusg.MfUsg`) to which
         this package will be added.
     nodes : int
         Number of nodes in the model grid (default is 2).
@@ -191,9 +192,8 @@ class ModflowDisU(Package):
     --------
 
     >>> import flopy
-    >>> m = flopy.modflow.Modflow()
-    >>> disu = flopy.modflow.ModflowDisU(m)
-
+    >>> m = flopy.mfusg.MfUsg()
+    >>> disu = flopy.mfusg.MfUsgDisU(m)
     """
 
     def __init__(
@@ -228,34 +228,23 @@ class ModflowDisU(Package):
         filenames=None,
         start_datetime=None,
     ):
+        msg = (
+            "Model object must be of type flopy.mfusg.MfUsg\n"
+            f"but received type: {type(model)}."
+        )
+        assert isinstance(model, MfUsg), msg
 
         # set default unit number of one is not specified
         if unitnumber is None:
-            unitnumber = ModflowDisU._defaultunit()
+            unitnumber = self._defaultunit()
 
-        # set filenames
-        if filenames is None:
-            filenames = [None]
-        elif isinstance(filenames, str):
-            filenames = [filenames]
-
-        # Fill namefile items
-        name = [ModflowDisU._ftype()]
-        units = [unitnumber]
-        extra = [""]
-
-        # set package name
-        fname = [filenames[0]]
-
-        # Call ancestor's init to set self.parent, extension, name and unit number
-        Package.__init__(
-            self,
+        # call base package constructor
+        super().__init__(
             model,
             extension=extension,
-            name=name,
-            unit_number=units,
-            extra=extra,
-            filenames=fname,
+            name=self._ftype(),
+            unit_number=unitnumber,
+            filenames=self._prepare_filenames(filenames),
         )
 
         # Set values of all parameters
@@ -523,7 +512,7 @@ class ModflowDisU(Package):
         f : filename or file handle
             File to load.
         model : model object
-            The model object (of type :class:`flopy.modflow.mf.Modflow`) to
+            The model object (of type :class:`flopy.mfusg.MfUsg`) to
             which this package will be added.
         ext_unit_dict : dictionary, optional
             If the arrays in the file are specified using EXTERNAL,
@@ -536,17 +525,21 @@ class ModflowDisU(Package):
 
         Returns
         -------
-        dis : ModflowDisU object
-            ModflowDisU object.
+        dis : MfUsgDisU object
+            MfUsgDisU object.
 
         Examples
         --------
 
         >>> import flopy
-        >>> m = flopy.modflow.Modflow()
-        >>> disu = flopy.modflow.ModflowDisU.load('test.disu', m)
-
+        >>> m = flopy.mfusg.MfUsg()
+        >>> disu = flopy.mfusg.MfUsgDisU.load('test.disu', m)
         """
+        msg = (
+            "Model object must be of type flopy.mfusg.MfUsg\n"
+            f"but received type: {type(model)}."
+        )
+        assert isinstance(model, MfUsg), msg
 
         if model.verbose:
             print("loading disu package file...")
@@ -775,7 +768,7 @@ class ModflowDisU(Package):
         filenames = [None]
         if ext_unit_dict is not None:
             unitnumber, filenames[0] = model.get_ext_dict_attr(
-                ext_unit_dict, filetype=ModflowDisU._ftype()
+                ext_unit_dict, filetype=cls._ftype()
             )
 
         # create dis object instance
